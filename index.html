@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Dashboard</title>
+    <title>Adapters Tools</title>
     <style>
         * {
             margin: 0;
@@ -26,16 +26,92 @@
         h1 {
             text-align: center;
             color: white;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            color: #667eea;
+            font-size: 1.2em;
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1em;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .search-input::placeholder {
+            color: #999;
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px;
+            display: none;
+            transition: color 0.3s ease;
+        }
+
+        .clear-search:hover {
+            color: #667eea;
+        }
+
+        .clear-search.visible {
+            display: block;
+        }
+
+        .group-section {
+            margin-bottom: 30px;
+        }
+
+        .group-header {
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 30px;
-            padding: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 0 15px 15px 15px;
         }
 
         .app-card {
@@ -54,19 +130,19 @@
 
         .app-thumbnail {
             width: 100%;
-            height: 250px;
+            height: 120px;
             background: #f0f0f0;
             position: relative;
             overflow: hidden;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 2px solid #667eea;
         }
 
         .app-thumbnail iframe {
-            width: 100%;
-            height: 100%;
+            width: 400%;
+            height: 400%;
             border: none;
             pointer-events: none;
-            transform: scale(1);
+            transform: scale(0.25);
             transform-origin: top left;
         }
 
@@ -90,30 +166,31 @@
         }
 
         .app-info {
-            padding: 20px;
+            padding: 12px;
         }
 
         .app-name {
-            font-size: 1.5em;
+            font-size: 1.1em;
             font-weight: bold;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .app-url {
             color: #666;
-            font-size: 0.9em;
+            font-size: 0.75em;
             word-break: break-all;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .app-link {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 30px;
-            border-radius: 25px;
+            padding: 8px 20px;
+            border-radius: 20px;
             text-decoration: none;
+            font-size: 0.85em;
             font-weight: bold;
             transition: all 0.3s ease;
         }
@@ -174,15 +251,33 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Application Dashboard</h1>
-        <div id="dashboard" class="dashboard-grid"></div>
+        <h1>🚀 Adapters Tools</h1>
+        
+        <div class="search-container">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="search-input"
+                    placeholder="Search applications by name..."
+                    autocomplete="off"
+                />
+                <button id="clearSearch" class="clear-search">✕</button>
+            </div>
+        </div>
+        
+        <div id="dashboard"></div>
     </div>
 
     <script>
         // Parse environment variables from the server
         const apps = window.APP_CONFIG || {};
 
-        function createAppCard(name, url) {
+        function createAppCard(appKey, appData) {
+            const name = appData.name || appKey;
+            const url = appData.url || appData;
+            
             const card = document.createElement('div');
             card.className = 'app-card';
             card.onclick = () => window.open(url, '_blank');
@@ -254,23 +349,131 @@
             return card;
         }
 
+        // Search functionality
+        let allApps = [];
+        
+        function sortApps(appsArray) {
+            return appsArray.sort((a, b) => {
+                const groupA = a[1].group || 'Other';
+                const groupB = b[1].group || 'Other';
+                const nameA = a[1].name || a[0];
+                const nameB = b[1].name || b[0];
+                
+                // Sort by group first, then by name
+                if (groupA !== groupB) {
+                    return groupA.localeCompare(groupB);
+                }
+                return nameA.localeCompare(nameB);
+            });
+        }
+        
+        function groupAppsByGroup(appsArray) {
+            const grouped = {};
+            appsArray.forEach(([key, appData]) => {
+                const group = appData.group || 'Other';
+                if (!grouped[group]) {
+                    grouped[group] = [];
+                }
+                grouped[group].push([key, appData]);
+            });
+            return grouped;
+        }
+        
+        function renderGroupedApps(appsArray) {
+            const dashboard = document.getElementById('dashboard');
+            const grouped = groupAppsByGroup(appsArray);
+            const sortedGroups = Object.keys(grouped).sort();
+            
+            sortedGroups.forEach(groupName => {
+                // Create group section
+                const groupSection = document.createElement('div');
+                groupSection.className = 'group-section';
+                
+                // Create group header
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header';
+                groupHeader.textContent = groupName;
+                groupSection.appendChild(groupHeader);
+                
+                // Create grid for this group
+                const grid = document.createElement('div');
+                grid.className = 'dashboard-grid';
+                
+                // Sort apps within group by name
+                const sortedApps = grouped[groupName].sort((a, b) => {
+                    const nameA = a[1].name || a[0];
+                    const nameB = b[1].name || b[0];
+                    return nameA.localeCompare(nameB);
+                });
+                
+                sortedApps.forEach(([key, appData]) => {
+                    const card = createAppCard(key, appData);
+                    grid.appendChild(card);
+                });
+                
+                groupSection.appendChild(grid);
+                dashboard.appendChild(groupSection);
+            });
+        }
+        
+        function filterApps(searchTerm) {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '';
+            
+            const filtered = allApps.filter(([key, appData]) => {
+                const name = appData.name || key;
+                return name.toLowerCase().includes(searchTerm.toLowerCase());
+            });
+            
+            if (filtered.length === 0) {
+                dashboard.innerHTML = '<div class="no-apps">No applications found matching "' + searchTerm + '"</div>';
+                return;
+            }
+            
+            // Render filtered results with grouping
+            renderGroupedApps(filtered);
+        }
+        
         function renderDashboard() {
             const dashboard = document.getElementById('dashboard');
-            const appEntries = Object.entries(apps);
+            dashboard.innerHTML = ''; // Clear existing content
+            allApps = Object.entries(apps);
 
-            if (appEntries.length === 0) {
-                dashboard.innerHTML = '<div class="no-apps">No applications configured. Please check your .env file.</div>';
+            if (allApps.length === 0) {
+                dashboard.innerHTML = '<div class="no-apps">No applications configured. Please check your docker-compose.yml file.</div>';
                 return;
             }
 
-            appEntries.forEach(([name, url]) => {
-                const card = createAppCard(name, url);
-                dashboard.appendChild(card);
-            });
+            // Sort and render with grouping
+            const sorted = sortApps([...allApps]);
+            renderGroupedApps(sorted);
         }
-
+        
         // Initialize dashboard
         renderDashboard();
+        
+        // Setup search
+        const searchInput = document.getElementById('searchInput');
+        const clearButton = document.getElementById('clearSearch');
+        
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.trim();
+            
+            if (searchTerm) {
+                clearButton.classList.add('visible');
+                filterApps(searchTerm);
+            } else {
+                clearButton.classList.remove('visible');
+                renderDashboard();
+            }
+        });
+        
+        clearButton.addEventListener('click', () => {
+            searchInput.value = '';
+            clearButton.classList.remove('visible');
+            renderDashboard();
+            searchInput.focus();
+        });
     </script>
 </body>
 </html>

@@ -9,15 +9,37 @@ const PORT = process.env.DASHBOARD_PORT || 80;
 function getAppConfig() {
     const config = {};
     Object.keys(process.env).forEach(key => {
-        if (key.startsWith('APP')) {
-            config[key] = process.env[key];
+        if (key.startsWith('APP') && key !== 'APP') {
+            const value = process.env[key];
+            // Check if value contains GROUP___NAME___URL format
+            const parts = value.split('___');
+            
+            if (parts.length === 3) {
+                // New format: GROUP___NAME___URL
+                config[key] = {
+                    group: parts[0].trim(),
+                    name: parts[1].trim(),
+                    url: parts[2].trim()
+                };
+            } else if (parts.length === 2) {
+                // Old format: NAME___URL
+                config[key] = {
+                    group: 'Other',
+                    name: parts[0].trim(),
+                    url: parts[1].trim()
+                };
+            } else {
+                // Fallback to simple URL
+                config[key] = {
+                    group: 'Other',
+                    name: key,
+                    url: value
+                };
+            }
         }
     });
     return config;
 }
-
-// Serve static files
-app.use(express.static('.'));
 
 // Main route - inject app configuration
 app.get('/', (req, res) => {
@@ -41,9 +63,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Dashboard server running on port ${PORT}`);
     console.log('Configured applications:');
     const config = getAppConfig();
-    Object.entries(config).forEach(([name, url]) => {
-        console.log(`  ${name}: ${url}`);
+    Object.entries(config).forEach(([key, app]) => {
+        console.log(`  ${key}: [${app.group}] ${app.name} - ${app.url}`);
     });
 });
-
-// Made with Bob

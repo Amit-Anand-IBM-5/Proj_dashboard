@@ -1,5 +1,4 @@
-version: '3.8'
-
+# docker compose restart
 services:
   dashboard:
     build: .
@@ -7,9 +6,12 @@ services:
     ports:
       - "80:80"
     environment:
-      - APP1=http://9.60.247.25:8002/
-      - APP2=http://9.60.247.25:8003/
-      - APP3=http://9.60.247.25:8001/
+      #- APPn=GROUP___NAME___URL
+      - APP1=QA___JIRA CLONE___http://9.60.247.25:8000/
+      - APP2=QA___FIX VALIDATOR___http://9.60.247.25:8004/
+      - APP3=DEV___JAKARTA ANLYSER___http://9.60.247.25:8001/
+      - APP4=DEV___NODE FILE VIEWER___http://9.60.247.25:8002/
+      - APP5=DEV___JAR ZIP DIFF___http://9.60.247.25:8003/
       - DASHBOARD_PORT=80
     restart: unless-stopped
     networks:
@@ -19,4 +21,3 @@ networks:
   dashboard-network:
     driver: bridge
 
-# Made with Bob
