@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .app-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .app-thumbnail {
+            width: 100%;
+            height: 250px;
+            background: #f0f0f0;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .app-thumbnail iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none;
+            transform: scale(1);
+            transform-origin: top left;
+        }
+
+        .app-thumbnail .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .app-thumbnail .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .app-info {
+            padding: 20px;
+        }
+
+        .app-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .app-url {
+            color: #666;
+            font-size: 0.9em;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
+        .app-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .app-link:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .no-apps {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            margin-top: 50px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(102, 126, 234, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .app-card:hover .overlay {
+            opacity: 1;
+        }
+
+        .overlay-text {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Application Dashboard</h1>
+        <div id="dashboard" class="dashboard-grid"></div>
+    </div>
+
+    <script>
+        // Parse environment variables from the server
+        const apps = window.APP_CONFIG || {};
+
+        function createAppCard(name, url) {
+            const card = document.createElement('div');
+            card.className = 'app-card';
+            card.onclick = () => window.open(url, '_blank');
+
+            const thumbnail = document.createElement('div');
+            thumbnail.className = 'app-thumbnail';
+
+            // Create loading indicator
+            const loading = document.createElement('div');
+            loading.className = 'loading';
+            loading.innerHTML = '<div class="spinner"></div>';
+            thumbnail.appendChild(loading);
+
+            // Create iframe for preview
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.sandbox = 'allow-same-origin allow-scripts';
+            
+            // Handle iframe load
+            iframe.onload = () => {
+                loading.style.display = 'none';
+            };
+
+            // Handle iframe error
+            iframe.onerror = () => {
+                loading.innerHTML = '<div class="error">⚠️<br>Preview unavailable</div>';
+            };
+
+            // Timeout for loading
+            setTimeout(() => {
+                if (loading.style.display !== 'none') {
+                    loading.innerHTML = '<div class="error">⚠️<br>Preview unavailable</div>';
+                }
+            }, 5000);
+
+            thumbnail.appendChild(iframe);
+
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerHTML = '<div class="overlay-text">Click to Open</div>';
+            thumbnail.appendChild(overlay);
+
+            const info = document.createElement('div');
+            info.className = 'app-info';
+
+            const appName = document.createElement('div');
+            appName.className = 'app-name';
+            appName.textContent = name;
+
+            const appUrl = document.createElement('div');
+            appUrl.className = 'app-url';
+            appUrl.textContent = url;
+
+            const link = document.createElement('a');
+            link.className = 'app-link';
+            link.href = url;
+            link.target = '_blank';
+            link.textContent = 'Open Application →';
+            link.onclick = (e) => e.stopPropagation();
+
+            info.appendChild(appName);
+            info.appendChild(appUrl);
+            info.appendChild(link);
+
+            card.appendChild(thumbnail);
+            card.appendChild(info);
+
+            return card;
+        }
+
+        function renderDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            const appEntries = Object.entries(apps);
+
+            if (appEntries.length === 0) {
+                dashboard.innerHTML = '<div class="no-apps">No applications configured. Please check your .env file.</div>';
+                return;
+            }
+
+            appEntries.forEach(([name, url]) => {
+                const card = createAppCard(name, url);
+                dashboard.appendChild(card);
+            });
+        }
+
+        // Initialize dashboard
+        renderDashboard();
+    </script>
+</body>
+</html>
